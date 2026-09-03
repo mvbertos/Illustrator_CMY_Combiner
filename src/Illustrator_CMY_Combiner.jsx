@@ -1,12 +1,18 @@
 /// <reference types="../node_modules/types-for-adobe/Illustrator/2022"/>
 
-const doc = app.documents.add();
-const dialog = new Window("dialog", "Select Color Combination");
+//Defualt Values
 var size = 10;
 var progression = 5;
 var gap = 2;
 
-function drawCombination(x, p) {
+//Creates Dialog
+const dialog = new Window("dialog", "Select Color Combination");
+dialog.orientation = "column";
+dialog.spacing = gap;
+dialog.margins = gap;
+
+function drawCombination(x, p, baseColors) {
+  const doc = app.documents.add();
   const count = 100 / p;
   for (var j = 0; j < count + 1; j++) {
     for (var i = 0; i < count + 1; i++) {
@@ -25,9 +31,9 @@ function drawCombination(x, p) {
       }
 
       var fillColor = new CMYKColor();
-      fillColor.cyan = 0;
-      fillColor.magenta = 0;
-      fillColor.yellow = 0;
+      fillColor.cyan = baseColors[0];
+      fillColor.magenta = baseColors[1];
+      fillColor.yellow = baseColors[2];
       fillColor.black = 0;
 
       switch (x) {
@@ -62,9 +68,21 @@ function drawCombination(x, p) {
 }
 
 function showDialog() {
-  dialog.orientation = "column";
-  dialog.spacing = gap;
-  dialog.margins = gap;
+
+
+  //Base values 
+  const baseValuesText = dialog.add("statictext", undefined, "Base Values");
+  const CyanField = createInputField("Cyan:", "0");
+  const YellowField = createInputField("Yellow:", "0");
+  const MagentaField = createInputField("Magenta:", "0");
+
+  //Color Selection
+  const colorArray = ["CM", "CY", "MY", "All"];
+  const op = createDropdownEl("First Color:", colorArray);
+
+
+  //Displaying
+  const displayValuesText = dialog.add("statictext", undefined, "Display Settings");
 
   //Box size
   const sizeInputField = createInputField("Size:", size.toString());
@@ -78,9 +96,12 @@ function showDialog() {
     progression.toString(),
   );
 
-  //Color Selection
-  const colorArray = ["CM", "CY", "MY", "All"];
-  const op = createDropdownEl("First Color:", colorArray);
+  //Advenced
+  const advencedText = dialog.add("statictext", undefined, "Advenced Settings")
+  const repField = createInputField("Repetitions:", "1");
+  const CyanIncField = createInputField("Cyan:", "0");
+  const YellowIncField = createInputField("Yellow:", "0");
+  const MagentaIncField = createInputField("Magenta:", "0");
 
   const btnGroup = dialog.add("group");
   btnGroup.orientation = "row";
@@ -94,10 +115,24 @@ function showDialog() {
   });
 
   if (dialog.show() === 1) {
-    gap = mmToPt(parseFloat(gapInputField.text));
-    size = mmToPt(parseFloat(sizeInputField.text));
-    progression = parseFloat(progInputField.text);
-    drawCombination(op.selection.toString(), progression);
+    const g = mmToPt(parseFloat(gapInputField.text));
+    const s = mmToPt(parseFloat(sizeInputField.text));
+    const p = parseFloat(progInputField.text);
+    const r = parseInt(repField.text);
+    const bColors = [parseInt(CyanField.text), parseInt(YellowField.text), parseInt(MagentaField.text)];
+    const pColors = [parseInt(CyanIncField.text), parseInt(YellowIncField.text), parseInt(MagentaIncField.text)];
+    onSubmit(g, s, p, op.selection.toString(), r, bColors, pColors);
+  }
+}
+
+function onSubmit(gap, size, progression, op, repetitions, baseColors, repInc) {
+  this.gap = gap;
+  this.size = size;
+  this.progression = progression;
+  var colors = baseColors;
+  for (var i = 0; i < repetitions; i++) {
+    drawCombination(op, progression, colors);
+    colors = [baseColors[0] + (i * repInc[0]), baseColors[1] + (i * repInc[1]), baseColors[2] + (i * repInc[2])];
   }
 }
 
@@ -106,7 +141,9 @@ function createInputField(labelValue, defaultValue) {
   inputGroup.orientation = "row";
   inputGroup.alignment = "left";
   const labelEl = inputGroup.add("statictext", undefined, labelValue);
+  labelEl.preferredSize.width = 100;
   const inputField = inputGroup.add("edittext", undefined, defaultValue);
+  inputField.preferredSize.width = 100;
   return inputField;
 }
 
@@ -115,7 +152,9 @@ function createDropdownEl(labelValue, options) {
   ddGroup.orientation = "row";
   ddGroup.alignment = "left";
   const labelEL = ddGroup.add("statictext", undefined, labelValue);
+  labelEL.preferredSize.width = 100;
   const dropdown = ddGroup.add("dropdownlist", undefined, options);
+  dropdown.preferredSize.width = 100;
   dropdown.selection = 0;
   return dropdown;
 }

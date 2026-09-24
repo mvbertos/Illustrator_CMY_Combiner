@@ -21,20 +21,6 @@ function drawCombination(x, p, c) {
     for (var i = 0; i < count + 1; i++) {
       var iValue = i * p;
 
-      if (i === j && j === 0) {
-        continue;
-      } else if (i == 0) {
-        var text = doc.textFrames.add();
-        text.position = [-(size / 2), j * (size + gap)];
-        text.contents = jValue.toString() + x[0];
-        continue;
-      } else if (j == 0) {
-        var text = doc.textFrames.add();
-        text.position = [i * (size + gap), 0];
-        text.contents = iValue.toString() + x[1];
-        continue;
-      }
-
       switch (x) {
         case "CM":
           c.cyan = clamp(0, base_c.cyan + iValue, 100);
@@ -53,6 +39,30 @@ function drawCombination(x, p, c) {
           c.magenta = clamp(0, base_c.magenta + iValue, 100);
           c.yellow = clamp(0, base_c.yellow + iValue, 100);
           break;
+      }
+
+      if (i === j && j === 0) {
+        continue;
+      } else if (i == 0) {
+        var text = doc.textFrames.add();
+        text.position = [-(size / 2), j * (size + gap)];
+        text.contents =
+          c.cyan.toString() +
+          "," +
+          c.magenta.toString() +
+          "," +
+          c.yellow.toString();
+        continue;
+      } else if (j == 0) {
+        var text = doc.textFrames.add();
+        text.position = [i * (size + gap), 0];
+        text.contents =
+          c.cyan.toString() +
+          "," +
+          c.magenta.toString() +
+          "," +
+          c.yellow.toString();
+        continue;
       }
 
       var rect = doc.pathItems.rectangle(
@@ -151,8 +161,8 @@ function onSubmit(gap, size, progression, op, repetitions, baseColors, repInc) {
       progression,
       createColor(
         baseColors[0] + i * repInc[0],
-        baseColors[1] + i * repInc[1],
         baseColors[2] + i * repInc[2],
+        baseColors[1] + i * repInc[1],
         0,
       ),
     );

@@ -11,48 +11,47 @@ dialog.orientation = "column";
 dialog.spacing = gap;
 dialog.margins = gap;
 
-function drawCombination(x, p, baseColors) {
+function drawCombination(x, p, c) {
   const doc = app.documents.add();
   const count = 100 / p;
+  const base_c = createColor(c.cyan, c.magenta, c.yellow, 0);
+
   for (var j = 0; j < count + 1; j++) {
+    var jValue = j * p;
     for (var i = 0; i < count + 1; i++) {
+      var iValue = i * p;
+
       if (i === j && j === 0) {
         continue;
       } else if (i == 0) {
         var text = doc.textFrames.add();
         text.position = [-(size / 2), j * (size + gap)];
-        text.contents = (j * p).toString() + x[0];
+        text.contents = jValue.toString() + x[0];
         continue;
       } else if (j == 0) {
         var text = doc.textFrames.add();
         text.position = [i * (size + gap), 0];
-        text.contents = (i * p).toString() + x[1];
+        text.contents = iValue.toString() + x[1];
         continue;
       }
 
-      var fillColor = new CMYKColor();
-      fillColor.cyan = baseColors[0];
-      fillColor.magenta = baseColors[1];
-      fillColor.yellow = baseColors[2];
-      fillColor.black = 0;
-
       switch (x) {
         case "CM":
-          fillColor.cyan = i * p;
-          fillColor.magenta = j * p;
+          c.cyan = clamp(0, base_c.cyan + iValue, 100);
+          c.magenta = clamp(0, base_c.magenta + jValue, 100);
           break;
         case "CY":
-          fillColor.cyan = i * p;
-          fillColor.yellow = j * p;
+          c.cyan = clamp(0, base_c.cyan + iValue, 100);
+          c.yellow = clamp(0, base_c.yellow + jValue, 100);
           break;
         case "MY":
-          fillColor.magenta = i * p;
-          fillColor.yellow = j * p;
+          c.magenta = clamp(0, base_c + iValue, 100);
+          c.yellow = clamp(0, base_c.yellow + jValue, 100);
           break;
         case "All":
-          fillColor.cyan = i * p;
-          fillColor.magenta = i * p;
-          fillColor.yellow = i * p;
+          c.cyan = clamp(0, base_c.cyan + iValue, 100);
+          c.magenta = clamp(0, base_c.magenta + iValue, 100);
+          c.yellow = clamp(0, base_c.yellow + iValue, 100);
           break;
       }
 
@@ -62,15 +61,18 @@ function drawCombination(x, p, baseColors) {
         size,
         size,
       );
-      rect.fillColor = fillColor;
+
+      rect.fillColor = c;
     }
   }
 }
 
-function showDialog() {
+function clamp(min, value, max) {
+  return Math.min(Math.max(value, min), max);
+}
 
-
-  //Base values 
+function showDialog(submit) {
+  //Base values
   const baseValuesText = dialog.add("statictext", undefined, "Base Values");
   const CyanField = createInputField("Cyan:", "0");
   const YellowField = createInputField("Yellow:", "0");
@@ -80,9 +82,12 @@ function showDialog() {
   const colorArray = ["CM", "CY", "MY", "All"];
   const op = createDropdownEl("First Color:", colorArray);
 
-
   //Displaying
-  const displayValuesText = dialog.add("statictext", undefined, "Display Settings");
+  const displayValuesText = dialog.add(
+    "statictext",
+    undefined,
+    "Display Settings",
+  );
 
   //Box size
   const sizeInputField = createInputField("Size:", size.toString());
@@ -97,7 +102,7 @@ function showDialog() {
   );
 
   //Advenced
-  const advencedText = dialog.add("statictext", undefined, "Advenced Settings")
+  const advencedText = dialog.add("statictext", undefined, "Advenced Settings");
   const repField = createInputField("Repetitions:", "1");
   const CyanIncField = createInputField("Cyan:", "0");
   const YellowIncField = createInputField("Yellow:", "0");
@@ -119,9 +124,19 @@ function showDialog() {
     const s = mmToPt(parseFloat(sizeInputField.text));
     const p = parseFloat(progInputField.text);
     const r = parseInt(repField.text);
-    const bColors = [parseInt(CyanField.text), parseInt(YellowField.text), parseInt(MagentaField.text)];
-    const pColors = [parseInt(CyanIncField.text), parseInt(YellowIncField.text), parseInt(MagentaIncField.text)];
-    onSubmit(g, s, p, op.selection.toString(), r, bColors, pColors);
+    const bColors = [
+      parseInt(CyanField.text),
+      parseInt(YellowField.text),
+      parseInt(MagentaField.text),
+      0,
+    ];
+    const pColors = [
+      parseInt(CyanIncField.text),
+      parseInt(YellowIncField.text),
+      parseInt(MagentaIncField.text),
+      0,
+    ];
+    submit(g, s, p, op.selection.toString(), r, bColors, pColors);
   }
 }
 
@@ -129,11 +144,30 @@ function onSubmit(gap, size, progression, op, repetitions, baseColors, repInc) {
   this.gap = gap;
   this.size = size;
   this.progression = progression;
-  var colors = baseColors;
+
   for (var i = 0; i < repetitions; i++) {
-    drawCombination(op, progression, colors);
-    colors = [baseColors[0] + (i * repInc[0]), baseColors[1] + (i * repInc[1]), baseColors[2] + (i * repInc[2])];
+    drawCombination(
+      op,
+      progression,
+      createColor(
+        baseColors[0] + i * repInc[0],
+        baseColors[1] + i * repInc[1],
+        baseColors[2] + i * repInc[2],
+        0,
+      ),
+    );
   }
+}
+
+//FillColor
+function createColor(c, m, y, k) {
+  //Here lies variable of great inportance
+  var color = new CMYKColor();
+  color.cyan = c;
+  color.magenta = m;
+  color.yellow = y;
+  color.black = k;
+  return color;
 }
 
 function createInputField(labelValue, defaultValue) {
@@ -163,4 +197,4 @@ function mmToPt(value) {
   return value * 2.834645669;
 }
 
-showDialog();
+showDialog(onSubmit);
